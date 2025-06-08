@@ -8,17 +8,552 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f9fafb;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 24px;
+        }
+    </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="loading">
+            🦝 Loading Trash Panda Trebuchet Project Manager...
+        </div>
+    </div>
     
     <script type="text/babel">
-        // Paste your entire React component code here
-        const TrashPandaProjectManager = () => {
-            // All your component code goes here
-        };
-        
-        ReactDOM.render(<TrashPandaProjectManager />, document.getElementById('root'));
+        const { useState, useEffect } = React;
+
+        function TrashPandaProjectManager() {
+          const [phases, setPhases] = useState([
+            {
+              id: 1,
+              name: "Pre-Production & Prototyping",
+              description: "Define core gameplay, prove fun factor, establish technical feasibility",
+              expanded: true,
+              codeFiles: [
+                { 
+                  name: "Core Physics Prototype", 
+                  type: "unity", 
+                  content: `// Unity C# script for trebuchet physics
+using UnityEngine;
+
+public class TrebuchetController : MonoBehaviour
+{
+    public Transform pivot;
+    public Rigidbody projectile;
+    public float power = 10f;
+    
+    void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            LaunchProjectile();
+        }
+    }
+    
+    void LaunchProjectile()
+    {
+        Vector3 launchVector = CalculateLaunchVector();
+        projectile.AddForce(launchVector * power, ForceMode.Impulse);
+    }
+    
+    Vector3 CalculateLaunchVector()
+    {
+        return transform.forward + Vector3.up * 0.5f;
+    }
+}`
+                }
+              ],
+              tasks: [
+                { id: 1, text: "Finalize Core Game Concept", completed: false, priority: "high" },
+                { id: 2, text: "Core Physics Prototype", completed: false, priority: "high" },
+                { id: 3, text: "Art Style Exploration", completed: false, priority: "medium" }
+              ]
+            },
+            {
+              id: 2,
+              name: "Vertical Slice",
+              description: "Create a small, polished section representing final quality",
+              expanded: false,
+              codeFiles: [],
+              tasks: [
+                { id: 4, text: "Develop 2-3 Complete Levels", completed: false, priority: "high" },
+                { id: 5, text: "Implement Core Raccoon Progression", completed: false, priority: "high" }
+              ]
+            },
+            {
+              id: 3,
+              name: "Production",
+              description: "Create full content, expand all systems, integrate all features",
+              expanded: false,
+              codeFiles: [],
+              tasks: [
+                { id: 6, text: "Level Design & Creation", completed: false, priority: "high" },
+                { id: 7, text: "Full Projectile Implementation", completed: false, priority: "high" }
+              ]
+            }
+          ]);
+
+          const [newTaskText, setNewTaskText] = useState('');
+          const [newTaskPhase, setNewTaskPhase] = useState(1);
+          const [selectedCodeFile, setSelectedCodeFile] = useState(null);
+          const [compilerOutput, setCompilerOutput] = useState('');
+          const [isRunning, setIsRunning] = useState(false);
+          const [showCodePortal, setShowCodePortal] = useState(false);
+          const [newCodeInput, setNewCodeInput] = useState('');
+          const [newCodeName, setNewCodeName] = useState('');
+          const [showHelp, setShowHelp] = useState(null);
+
+          const helpMessages = {
+            overview: `Welcome to Trash Panda Trebuchet Project Manager!
+
+• Track your game development progress
+• Manage tasks across development phases  
+• Write and test code directly in the browser
+• Export code files for Unity or other tools
+
+Click any 🦝 raccoon for help!`,
+            tasks: `Task Management Help:
+
+• Add tasks using the input field
+• Click checkboxes to mark complete
+• Tasks are organized by development phase
+• Track your progress with the progress bars
+
+Pro tip: Break big tasks into smaller ones!`,
+            codePortal: `Code Portal Help:
+
+1. Enter a file name
+2. Write or paste your code
+3. Click 'Add to Phase' to save
+4. Use 'Test Code' to run JavaScript
+
+Perfect for rapid prototyping!`
+          };
+
+          function detectLanguage(code) {
+            if (!code.trim()) return 'text';
+            const codeLines = code.toLowerCase();
+            
+            if (codeLines.includes('using unityengine') || codeLines.includes('monobehaviour')) {
+              return 'unity';
+            }
+            if (codeLines.includes('console.log') || codeLines.includes('function ')) {
+              return 'javascript';
+            }
+            if (codeLines.includes('def ') || codeLines.includes('import ')) {
+              return 'python';
+            }
+            return 'text';
+          }
+
+          function getLanguageName(lang) {
+            switch (lang) {
+              case 'unity': return 'Unity C#';
+              case 'javascript': return 'JavaScript';
+              case 'python': return 'Python';
+              default: return 'Plain Text';
+            }
+          }
+
+          function togglePhaseExpansion(phaseId) {
+            setPhases(phases.map(phase => 
+              phase.id === phaseId ? { ...phase, expanded: !phase.expanded } : phase
+            ));
+          }
+
+          function toggleTaskCompletion(phaseId, taskId) {
+            setPhases(phases.map(phase => 
+              phase.id === phaseId 
+                ? {
+                    ...phase,
+                    tasks: phase.tasks.map(task => 
+                      task.id === taskId ? { ...task, completed: !task.completed } : task
+                    )
+                  }
+                : phase
+            ));
+          }
+
+          function addNewTask() {
+            if (!newTaskText.trim()) return;
+
+            const newTask = {
+              id: Date.now(),
+              text: newTaskText,
+              completed: false,
+              priority: 'medium'
+            };
+
+            setPhases(phases.map(phase => 
+              phase.id === newTaskPhase 
+                ? { ...phase, tasks: [...phase.tasks, newTask] }
+                : phase
+            ));
+
+            setNewTaskText('');
+          }
+
+          function addCodeFromPortal() {
+            if (!newCodeInput.trim() || !newCodeName.trim()) {
+              alert('Please enter both code name and content');
+              return;
+            }
+
+            const detectedLang = detectLanguage(newCodeInput);
+            const newFile = {
+              name: newCodeName,
+              type: detectedLang,
+              content: newCodeInput
+            };
+
+            setPhases(phases.map(phase => 
+              phase.id === 1 
+                ? { ...phase, codeFiles: [...(phase.codeFiles || []), newFile] }
+                : phase
+            ));
+
+            setNewCodeInput('');
+            setNewCodeName('');
+            setShowCodePortal(false);
+            alert(`Code file added as ${getLanguageName(detectedLang)}!`);
+          }
+
+          function runCode(code) {
+            setIsRunning(true);
+            setCompilerOutput('🔄 Running JavaScript...\n');
+            
+            setTimeout(() => {
+              try {
+                let output = '';
+                const oldLog = console.log;
+                console.log = (...args) => {
+                  output += args.join(' ') + '\n';
+                };
+                
+                new Function(code)();
+                console.log = oldLog;
+                
+                setCompilerOutput(`✅ Success!
+
+📤 Output:
+${output || 'No console output'}
+
+🦝 Ready for Trash Panda Trebuchet!`);
+              } catch (error) {
+                setCompilerOutput(`❌ Error!
+
+🐛 ${error.message}`);
+              }
+              setIsRunning(false);
+            }, 1000);
+          }
+
+          function getProgressPercentage(phase) {
+            if (phase.tasks.length === 0) return 0;
+            const completed = phase.tasks.filter(task => task.completed).length;
+            return Math.round((completed / phase.tasks.length) * 100);
+          }
+
+          const totalTasks = phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
+          const completedTasks = phases.reduce((sum, phase) => 
+            sum + phase.tasks.filter(task => task.completed).length, 0
+          );
+
+          return React.createElement('div', { className: "max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen" },
+            // Header
+            React.createElement('div', { className: "bg-white rounded-lg shadow-lg p-6 mb-6" },
+              React.createElement('div', { className: "flex items-center justify-between mb-4" },
+                React.createElement('div', null,
+                  React.createElement('h1', { className: "text-3xl font-bold text-gray-800" },
+                    '🗿 Trash Panda Trebuchet',
+                    React.createElement('span', { className: "text-lg font-normal text-gray-600 ml-3" }, 'Project Manager'),
+                    React.createElement('button', {
+                      onClick: () => setShowHelp('overview'),
+                      className: "ml-3 text-lg hover:scale-110 transition-transform",
+                      title: "How to use the Project Manager"
+                    }, '🦝')
+                  ),
+                  React.createElement('p', { className: "text-gray-600 mt-2" }, 'Piza Sukeruton Universe • 2.5D Physics Puzzle Arcade Strategy')
+                ),
+                React.createElement('div', { className: "text-right" },
+                  React.createElement('div', { className: "text-2xl font-bold text-blue-600" },
+                    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0, '%'
+                  ),
+                  React.createElement('div', { className: "text-sm text-gray-500" }, 'Overall Progress'),
+                  React.createElement('div', { className: "text-xs text-gray-400" }, `${completedTasks}/${totalTasks} tasks`)
+                )
+              ),
+              React.createElement('div', { className: "w-full bg-gray-200 rounded-full h-3" },
+                React.createElement('div', {
+                  className: "bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300",
+                  style: { width: (totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0) + '%' }
+                })
+              )
+            ),
+
+            // Controls
+            React.createElement('div', { className: "bg-white rounded-lg shadow-lg p-6 mb-6" },
+              React.createElement('div', { className: "flex flex-wrap gap-4 mb-4" },
+                React.createElement('button', {
+                  onClick: () => setShowCodePortal(!showCodePortal),
+                  className: 'px-4 py-2 rounded border ' + (showCodePortal ? 'bg-green-100 border-green-500' : 'bg-gray-100 border-gray-300')
+                }, '💻 Code Portal')
+              ),
+              React.createElement('div', { className: "flex gap-2" },
+                React.createElement('input', {
+                  type: "text",
+                  value: newTaskText,
+                  onChange: (e) => setNewTaskText(e.target.value),
+                  placeholder: "Add new task...",
+                  className: "flex-1 border rounded px-3 py-2",
+                  onKeyPress: (e) => e.key === 'Enter' && addNewTask()
+                }),
+                React.createElement('select', {
+                  value: newTaskPhase,
+                  onChange: (e) => setNewTaskPhase(parseInt(e.target.value)),
+                  className: "border rounded px-3 py-2"
+                }, phases.map(phase => 
+                  React.createElement('option', { key: phase.id, value: phase.id }, phase.name)
+                )),
+                React.createElement('button', {
+                  onClick: addNewTask,
+                  className: "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                }, '➕ Add Task'),
+                React.createElement('button', {
+                  onClick: () => setShowHelp('tasks'),
+                  className: "bg-gray-100 text-gray-600 px-3 py-2 rounded hover:bg-gray-200 text-lg",
+                  title: "Task help"
+                }, '🦝')
+              )
+            ),
+
+            // Help Modal
+            showHelp && React.createElement('div', { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" },
+              React.createElement('div', { className: "bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto" },
+                React.createElement('div', { className: "p-6" },
+                  React.createElement('div', { className: "flex items-center justify-between mb-4" },
+                    React.createElement('h3', { className: "text-xl font-bold text-gray-800" }, '🦝 Raccoon Help'),
+                    React.createElement('button', {
+                      onClick: () => setShowHelp(null),
+                      className: "text-gray-500 hover:text-red-500 text-xl"
+                    }, '✕')
+                  ),
+                  React.createElement('div', { className: "text-gray-700 whitespace-pre-line leading-relaxed" },
+                    helpMessages[showHelp]
+                  ),
+                  React.createElement('div', { className: "mt-6 flex justify-end" },
+                    React.createElement('button', {
+                      onClick: () => setShowHelp(null),
+                      className: "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    }, 'Got it! 👍')
+                  )
+                )
+              )
+            ),
+
+            // Code Portal
+            showCodePortal && React.createElement('div', { className: "bg-white rounded-lg shadow-lg p-6 mb-6 border-2 border-green-300" },
+              React.createElement('div', { className: "flex items-center gap-2 mb-4" },
+                React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, '🚀 Code Input Portal'),
+                React.createElement('button', {
+                  onClick: () => setShowHelp('codePortal'),
+                  className: "text-lg hover:scale-110 transition-transform",
+                  title: "Code Portal help"
+                }, '🦝')
+              ),
+              React.createElement('div', { className: "space-y-4" },
+                React.createElement('div', null,
+                  React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, 'File Name'),
+                  React.createElement('input', {
+                    type: "text",
+                    value: newCodeName,
+                    onChange: (e) => setNewCodeName(e.target.value),
+                    placeholder: "e.g., TrebuchetController",
+                    className: "w-full border rounded px-3 py-2"
+                  })
+                ),
+                React.createElement('div', null,
+                  React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, 'Code Content'),
+                  React.createElement('textarea', {
+                    value: newCodeInput,
+                    onChange: (e) => setNewCodeInput(e.target.value),
+                    placeholder: `🚀 Paste or type your code here...
+
+JavaScript example:
+console.log('Hello Trash Panda!');
+
+Unity C# example:
+using UnityEngine;
+public class Test : MonoBehaviour { }`,
+                    className: "w-full h-64 font-mono text-sm border rounded p-3 bg-gray-50"
+                  })
+                ),
+                React.createElement('div', { className: "flex gap-3" },
+                  React.createElement('button', {
+                    onClick: addCodeFromPortal,
+                    disabled: !newCodeInput.trim() || !newCodeName.trim(),
+                    className: "bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+                  }, '📤 Add to Phase 1'),
+                  React.createElement('button', {
+                    onClick: () => {
+                      if (newCodeInput.trim() && detectLanguage(newCodeInput) === 'javascript') {
+                        runCode(newCodeInput);
+                      } else {
+                        alert('Only JavaScript can be tested in the browser!');
+                      }
+                    },
+                    disabled: !newCodeInput.trim() || isRunning,
+                    className: "bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+                  }, isRunning ? '⏳ Testing...' : '▶️ Test JavaScript')
+                )
+              ),
+              compilerOutput && React.createElement('div', { className: "mt-6 border-t pt-4" },
+                React.createElement('h4', { className: "font-medium mb-3" }, '🔧 Compiler Output'),
+                React.createElement('div', { className: "bg-black text-green-400 p-4 rounded font-mono text-sm h-32 overflow-auto whitespace-pre-wrap" },
+                  compilerOutput
+                )
+              )
+            ),
+
+            // Code File Viewer
+            selectedCodeFile && React.createElement('div', { className: "bg-white rounded-lg shadow-lg mb-6" },
+              React.createElement('div', { className: "p-4 border-b flex items-center justify-between" },
+                React.createElement('div', { className: "flex items-center gap-2" },
+                  React.createElement('h3', { className: "text-lg font-semibold" }, `📄 ${selectedCodeFile.name}`),
+                  React.createElement('span', { className: "text-sm text-gray-500" }, `(${getLanguageName(selectedCodeFile.type)})`)
+                ),
+                React.createElement('button', {
+                  onClick: () => setSelectedCodeFile(null),
+                  className: "text-gray-500 hover:text-red-500 text-xl"
+                }, '✕')
+              ),
+              React.createElement('div', { className: "p-4" },
+                React.createElement('div', { className: "bg-gray-900 text-green-400 p-4 rounded font-mono text-sm overflow-auto max-h-96 mb-4" },
+                  React.createElement('div', { className: "text-blue-400 mb-2" }, `// ${selectedCodeFile.type.toUpperCase()} - ${selectedCodeFile.name}`),
+                  React.createElement('pre', { className: "whitespace-pre-wrap" }, selectedCodeFile.content)
+                ),
+                selectedCodeFile.type === 'javascript' && React.createElement('button', {
+                  onClick: () => runCode(selectedCodeFile.content),
+                  disabled: isRunning,
+                  className: "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+                }, isRunning ? '⏳ Running...' : '▶️ Run JavaScript')
+              )
+            ),
+
+            // Phases
+            phases.map(phase => 
+              React.createElement('div', { key: phase.id, className: "bg-white rounded-lg shadow-lg mb-6" },
+                React.createElement('div', {
+                  className: "p-6 border-b cursor-pointer hover:bg-gray-50",
+                  onClick: () => togglePhaseExpansion(phase.id)
+                },
+                  React.createElement('div', { className: "flex items-center justify-between" },
+                    React.createElement('div', { className: "flex items-center gap-3" },
+                      React.createElement('span', { className: "text-xl" }, phase.expanded ? '🔽' : '▶️'),
+                      React.createElement('div', null,
+                        React.createElement('h2', { className: "text-xl font-semibold text-gray-800" },
+                          `Phase ${phase.id}: ${phase.name}`
+                        ),
+                        React.createElement('p', { className: "text-gray-600 text-sm" }, phase.description),
+                        phase.codeFiles && phase.codeFiles.length > 0 && React.createElement('div', { className: "text-xs text-green-600 mt-1" },
+                          `📁 ${phase.codeFiles.length} code files`
+                        )
+                      )
+                    ),
+                    React.createElement('div', { className: "text-right" },
+                      React.createElement('div', { className: "text-lg font-bold text-blue-600" },
+                        getProgressPercentage(phase), '%'
+                      ),
+                      React.createElement('div', { className: "text-sm text-gray-500" },
+                        `${phase.tasks.filter(t => t.completed).length}/${phase.tasks.length} tasks`
+                      ),
+                      React.createElement('div', { className: "w-32 bg-gray-200 rounded-full h-2 mt-2" },
+                        React.createElement('div', {
+                          className: "bg-blue-500 h-2 rounded-full transition-all duration-300",
+                          style: { width: getProgressPercentage(phase) + '%' }
+                        })
+                      )
+                    )
+                  )
+                ),
+                phase.expanded && React.createElement('div', { className: "p-6" },
+                  // Code Files
+                  phase.codeFiles && phase.codeFiles.length > 0 && React.createElement('div', { className: "mb-6" },
+                    React.createElement('h3', { className: "text-lg font-semibold mb-3" }, `📁 Code Files (${phase.codeFiles.length})`),
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-3" },
+                      phase.codeFiles.map((file, index) =>
+                        React.createElement('button', {
+                          key: index,
+                          onClick: () => setSelectedCodeFile(file),
+                          className: "p-3 border rounded-lg hover:bg-blue-50 hover:border-blue-300 text-left transition-colors"
+                        },
+                          React.createElement('div', { className: "flex items-center gap-2 mb-1" },
+                            React.createElement('span', null, '📄'),
+                            React.createElement('span', { className: "font-medium" }, file.name),
+                            React.createElement('span', { className: "text-xs text-gray-500" }, `(${getLanguageName(file.type)})`)
+                          ),
+                          React.createElement('div', { className: "text-sm text-gray-600" },
+                            `${file.content.split('\n').length} lines`
+                          )
+                        )
+                      )
+                    )
+                  ),
+                  // Tasks
+                  React.createElement('h3', { className: "text-lg font-semibold mb-3" }, `📋 Tasks (${phase.tasks.length})`),
+                  phase.tasks.map(task =>
+                    React.createElement('div', { key: task.id, className: "flex items-start gap-3 p-3 hover:bg-gray-50 rounded mb-2" },
+                      React.createElement('button', {
+                        onClick: () => toggleTaskCompletion(phase.id, task.id),
+                        className: 'w-5 h-5 rounded border-2 flex items-center justify-center mt-1 ' + (
+                          task.completed 
+                            ? 'bg-green-500 border-green-500 text-white' 
+                            : 'border-gray-300 hover:border-green-500'
+                        )
+                      }, task.completed && '✓'),
+                      React.createElement('div', { className: "flex-1" },
+                        React.createElement('div', { className: "flex items-center gap-2 mb-1" },
+                          React.createElement('span', { className: task.completed ? 'line-through text-gray-500' : 'text-gray-800' },
+                            task.text
+                          ),
+                          React.createElement('span', {
+                            className: 'px-2 py-1 rounded text-xs font-medium ' + (
+                              task.priority === 'high' ? 'text-red-600 bg-red-50' :
+                              task.priority === 'medium' ? 'text-yellow-600 bg-yellow-50' :
+                              'text-green-600 bg-green-50'
+                            )
+                          }, task.priority)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+
+            // Footer
+            React.createElement('div', { className: "text-center text-gray-500 text-sm mt-8" },
+              React.createElement('p', null, '🦝 Piza Sukeruton Universe • Cheese Wars Saga'),
+              React.createElement('p', null, 'Built for the ultimate Trash Panda Trebuchet development journey')
+            )
+          );
+        }
+
+        // Wait for DOM to be ready
+        setTimeout(() => {
+          ReactDOM.render(React.createElement(TrashPandaProjectManager), document.getElementById('root'));
+        }, 100);
     </script>
 </body>
 </html>
