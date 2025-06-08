@@ -31,14 +31,13 @@
     </div>
     
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState } = React;
 
         function TrashPandaProjectManager() {
-            // All your state and logic functions are great and remain unchanged.
             const [phases, setPhases] = useState([
-                { id: 1, name: "Pre-Production & Prototyping", description: "Define core gameplay, prove fun factor, establish technical feasibility", expanded: true, codeFiles: [{ name: "Core Physics Prototype", type: "unity", content: `// Unity C# script...\n...` }], tasks: [{ id: 1, text: "Finalize Core Game Concept", completed: false, priority: "high" }, { id: 2, text: "Core Physics Prototype", completed: false, priority: "high" }, { id: 3, text: "Art Style Exploration", completed: false, priority: "medium" }] },
-                { id: 2, name: "Vertical Slice", description: "Create a small, polished section representing final quality", expanded: false, codeFiles: [], tasks: [{ id: 4, text: "Develop 2-3 Complete Levels", completed: false, priority: "high" }, { id: 5, text: "Implement Core Raccoon Progression", completed: false, priority: "high" }] },
-                { id: 3, name: "Production", description: "Create full content, expand all systems, integrate all features", expanded: false, codeFiles: [], tasks: [{ id: 6, text: "Level Design & Creation", completed: false, priority: "high" }, { id: 7, text: "Full Projectile Implementation", completed: false, priority: "high" }] }
+                { id: 1, name: "Pre-Production & Prototyping", description: "Define core gameplay, prove fun factor, establish technical feasibility", expanded: true, codeFiles: [ { name: "Core Physics Prototype", type: "unity", content: "// Unity C# script for trebuchet physics\nusing UnityEngine;\n\npublic class TrebuchetController : MonoBehaviour\n{\n    public Transform pivot;\n    public Rigidbody projectile;\n    public float power = 10f;\n    \n    void Update()\n    {\n        if (Input.GetMouseButtonDown(0))\n        {\n            LaunchProjectile();\n        }\n    }\n    \n    void LaunchProjectile()\n    {\n        Vector3 launchVector = CalculateLaunchVector();\n        projectile.AddForce(launchVector * power, ForceMode.Impulse);\n    }\n    \n    Vector3 CalculateLaunchVector()\n    {\n        return transform.forward + Vector3.up * 0.5f;\n    }\n}" } ], tasks: [ { id: 1, text: "Finalize Core Game Concept", completed: true, priority: "high" }, { id: 2, text: "Core Physics Prototype", completed: false, priority: "high" }, { id: 3, text: "Art Style Exploration", completed: false, priority: "medium" } ] },
+                { id: 2, name: "Vertical Slice", description: "Create a small, polished section representing final quality", expanded: false, codeFiles: [], tasks: [ { id: 4, text: "Develop 2-3 Complete Levels", completed: false, priority: "high" }, { id: 5, text: "Implement Core Raccoon Progression", completed: false, priority: "high" } ] },
+                { id: 3, name: "Production", description: "Create full content, expand all systems, integrate all features", expanded: false, codeFiles: [], tasks: [ { id: 6, text: "Level Design & Creation", completed: false, priority: "high" }, { id: 7, text: "Full Projectile Implementation", completed: false, priority: "high" } ] }
             ]);
             const [newTaskText, setNewTaskText] = useState('');
             const [newTaskPhase, setNewTaskPhase] = useState(1);
@@ -50,24 +49,27 @@
             const [newCodeName, setNewCodeName] = useState('');
             const [showHelp, setShowHelp] = useState(null);
 
-            // --- All your helper functions (helpMessages, detectLanguage, etc.) are perfect ---
-            // --- They are omitted here for brevity but should be included in your file ---
-            const helpMessages = { overview: `...`, tasks: `...`, codePortal: `...` }; // Keep your help messages
-            function detectLanguage(code) { if (!code.trim()) return 'text'; const codeLines = code.toLowerCase(); if (codeLines.includes('using unityengine') || codeLines.includes('monobehaviour')) { return 'unity'; } if (codeLines.includes('console.log') || codeLines.includes('function ')) { return 'javascript'; } if (codeLines.includes('def ') || codeLines.includes('import ')) { return 'python'; } return 'text'; }
-            function getLanguageName(lang) { switch (lang) { case 'unity': return 'Unity C#'; case 'javascript': return 'JavaScript'; case 'python': return 'Python'; default: return 'Plain Text'; } }
-            function togglePhaseExpansion(phaseId) { setPhases(phases.map(phase => phase.id === phaseId ? { ...phase, expanded: !phase.expanded } : phase)); }
-            function toggleTaskCompletion(phaseId, taskId) { setPhases(phases.map(phase => phase.id === phaseId ? { ...phase, tasks: phase.tasks.map(task => task.id === taskId ? { ...task, completed: !task.completed } : task) } : phase)); }
-            function addNewTask() { if (!newTaskText.trim()) return; const newTask = { id: Date.now(), text: newTaskText, completed: false, priority: 'medium' }; setPhases(phases.map(phase => phase.id === newTaskPhase ? { ...phase, tasks: [...phase.tasks, newTask] } : phase)); setNewTaskText(''); }
-            function addCodeFromPortal() { if (!newCodeInput.trim() || !newCodeName.trim()) { alert('Please enter both code name and content'); return; } const detectedLang = detectLanguage(newCodeInput); const newFile = { name: newCodeName, type: detectedLang, content: newCodeInput }; setPhases(phases.map(phase => phase.id === 1 ? { ...phase, codeFiles: [...(phase.codeFiles || []), newFile] } : phase)); setNewCodeInput(''); setNewCodeName(''); setShowCodePortal(false); alert(`Code file added as ${getLanguageName(detectedLang)}!`); }
-            function runCode(code) { setIsRunning(true); setCompilerOutput('🔄 Running JavaScript...\n'); setTimeout(() => { try { let output = ''; const oldLog = console.log; console.log = (...args) => { output += args.join(' ') + '\n'; }; new Function(code)(); console.log = oldLog; setCompilerOutput(`✅ Success!\n\n📤 Output:\n${output || 'No console output'}\n\n🦝 Ready for Trash Panda Trebuchet!`); } catch (error) { setCompilerOutput(`❌ Error!\n\n🐛 ${error.message}`); } setIsRunning(false); }, 1000); }
-            function getProgressPercentage(phase) { if (phase.tasks.length === 0) return 0; const completed = phase.tasks.filter(task => task.completed).length; return Math.round((completed / phase.tasks.length) * 100); }
-            
-            const totalTasks = phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
-            const completedTasks = phases.reduce((sum, phase) => sum + phase.tasks.filter(task => task.completed).length, 0);
+            const helpMessages = {
+                overview: `Welcome to Trash Panda Trebuchet Project Manager!\n\n• Track your game development progress\n• Manage tasks across development phases\n• Write and test code directly in the browser\n• Export code files for Unity or other tools\n\nClick any 🦝 raccoon for help!`,
+                tasks: `Task Management Help:\n\n• Add tasks using the input field\n• Click checkboxes to mark complete\n• Tasks are organized by development phase\n• Track your progress with the progress bars\n\nPro tip: Break big tasks into smaller ones!`,
+                codePortal: `Code Portal Help:\n\n1. Enter a file name\n2. Write or paste your code\n3. Click 'Add to Phase' to save\n4. Use 'Test Code' to run JavaScript\n\nPerfect for rapid prototyping!`
+            };
 
-            // This is the refactored part using JSX
+            function detectLanguage(code) { if (!code.trim()) return 'text'; const c = code.toLowerCase(); if (c.includes('using unityengine') || c.includes('monobehaviour')) return 'unity'; if (c.includes('console.log') || c.includes('function ')) return 'javascript'; if (c.includes('def ') || c.includes('import ')) return 'python'; return 'text'; }
+            function getLanguageName(lang) { switch (lang) { case 'unity': return 'Unity C#'; case 'javascript': return 'JavaScript'; case 'python': return 'Python'; default: return 'Plain Text'; } }
+            const togglePhaseExpansion = (id) => setPhases(phases.map(p => p.id === id ? { ...p, expanded: !p.expanded } : p));
+            const toggleTaskCompletion = (phaseId, taskId) => { setPhases(phases.map(p => p.id === phaseId ? { ...p, tasks: p.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t) } : p)); };
+            const addNewTask = () => { if (!newTaskText.trim()) return; const task = { id: Date.now(), text: newTaskText, completed: false, priority: 'medium' }; setPhases(phases.map(p => p.id === newTaskPhase ? { ...p, tasks: [...p.tasks, task] } : p)); setNewTaskText(''); };
+            const addCodeFromPortal = () => { if (!newCodeInput.trim() || !newCodeName.trim()) { alert('Please enter both code name and content'); return; } const lang = detectLanguage(newCodeInput); const file = { name: newCodeName, type: lang, content: newCodeInput }; setPhases(phases.map(p => p.id === 1 ? { ...p, codeFiles: [...(p.codeFiles || []), file] } : p)); setNewCodeInput(''); setNewCodeName(''); setShowCodePortal(false); alert(`Code file added as ${getLanguageName(lang)}!`); };
+            const runCode = (code) => { setIsRunning(true); setCompilerOutput('🔄 Running JavaScript...\n'); setTimeout(() => { try { let output = ''; const oldLog = console.log; console.log = (...args) => { output += args.join(' ') + '\n'; }; new Function(code)(); console.log = oldLog; setCompilerOutput(`✅ Success!\n\n📤 Output:\n${output || 'No console output'}`); } catch (e) { setCompilerOutput(`❌ Error!\n\n🐛 ${e.message}`); } setIsRunning(false); }, 500); };
+            const getProgressPercentage = (phase) => { if (!phase.tasks.length) return 0; const completed = phase.tasks.filter(t => t.completed).length; return Math.round((completed / phase.tasks.length) * 100); };
+            
+            const totalTasks = phases.reduce((sum, p) => sum + p.tasks.length, 0);
+            const completedTasks = phases.reduce((sum, p) => sum + p.tasks.filter(t => t.completed).length, 0);
+            const overallProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
             return (
-                <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+                <div className="max-w-6xl mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen">
                     {/* Header */}
                     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
                         <div className="flex items-center justify-between mb-4">
@@ -75,53 +77,99 @@
                                 <h1 className="text-3xl font-bold text-gray-800">
                                     🗿 Trash Panda Trebuchet
                                     <span className="text-lg font-normal text-gray-600 ml-3">Project Manager</span>
-                                    <button onClick={() => setShowHelp('overview')} className="ml-3 text-lg hover:scale-110 transition-transform" title="How to use the Project Manager">🦝</button>
+                                    <button onClick={() => setShowHelp('overview')} className="ml-3 text-2xl hover:scale-110 transition-transform" title="How to use this tool">🦝</button>
                                 </h1>
                                 <p className="text-gray-600 mt-2">Piza Sukeruton Universe • 2.5D Physics Puzzle Arcade Strategy</p>
                             </div>
-                            <div className="text-right">
-                                <div className="text-2xl font-bold text-blue-600">
-                                    {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%
-                                </div>
+                            <div className="text-right flex-shrink-0 ml-4">
+                                <div className="text-2xl font-bold text-blue-600">{overallProgress}%</div>
                                 <div className="text-sm text-gray-500">Overall Progress</div>
                                 <div className="text-xs text-gray-400">{completedTasks}/{totalTasks} tasks</div>
                             </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300" style={{ width: `${totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0}%` }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-3"><div className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all" style={{ width: `${overallProgress}%` }}></div></div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                        <div className="flex flex-wrap items-center gap-4">
+                            <button onClick={() => setShowCodePortal(!showCodePortal)} className={`px-4 py-2 rounded border transition-colors ${showCodePortal ? 'bg-green-100 border-green-500 text-green-800' : 'bg-gray-100 border-gray-300'}`}>💻 Code Portal</button>
+                            <div className="flex-grow flex flex-wrap sm:flex-nowrap gap-2">
+                                <input type="text" value={newTaskText} onChange={(e) => setNewTaskText(e.target.value)} placeholder="Add new task..." className="flex-grow border rounded px-3 py-2 w-full sm:w-auto" onKeyPress={(e) => e.key === 'Enter' && addNewTask()} />
+                                <select value={newTaskPhase} onChange={(e) => setNewTaskPhase(parseInt(e.target.value))} className="border rounded px-3 py-2">{phases.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select>
+                                <button onClick={addNewTask} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">➕ Add Task</button>
+                                <button onClick={() => setShowHelp('tasks')} className="bg-gray-100 text-gray-600 px-3 py-2 rounded hover:bg-gray-200 text-2xl" title="Task help">🦝</button>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Controls & Help Modal */}
-                    {/* ... The rest of your UI converted to JSX ... */}
-                    {/* For brevity, only showing the structure. The full conversion would follow this pattern. */}
+                    {/* Help Modal */}
+                    {showHelp && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg max-w-2xl w-full">
+                                <div className="p-6">
+                                    <div className="flex items-center justify-between mb-4"><h3 className="text-xl font-bold text-gray-800">🦝 Raccoon Help</h3><button onClick={() => setShowHelp(null)} className="text-gray-500 hover:text-red-500 text-2xl">✕</button></div>
+                                    <div className="text-gray-700 whitespace-pre-line leading-relaxed max-h-96 overflow-y-auto">{helpMessages[showHelp]}</div>
+                                    <div className="mt-6 flex justify-end"><button onClick={() => setShowHelp(null)} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Got it! 👍</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Code Portal */}
+                    {showCodePortal && (
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-2 border-green-300">
+                            <div className="flex items-center gap-2 mb-4"><h2 className="text-xl font-bold text-gray-800">🚀 Code Input Portal</h2><button onClick={() => setShowHelp('codePortal')} className="text-2xl hover:scale-110" title="Code Portal help">🦝</button></div>
+                            <div className="space-y-4">
+                                <div><label className="block text-sm font-medium text-gray-700 mb-1">File Name</label><input type="text" value={newCodeName} onChange={(e) => setNewCodeName(e.target.value)} placeholder="e.g., TrebuchetController.cs" className="w-full border rounded px-3 py-2" /></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Code Content</label><textarea value={newCodeInput} onChange={(e) => setNewCodeInput(e.target.value)} placeholder={`// Paste or type your code here...`} className="w-full h-64 font-mono text-sm border rounded p-3 bg-gray-900 text-gray-200"></textarea></div>
+                                <div className="flex gap-3">
+                                    <button onClick={addCodeFromPortal} disabled={!newCodeInput.trim() || !newCodeName.trim()} className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:opacity-50">📤 Add to Phase 1</button>
+                                    <button onClick={() => detectLanguage(newCodeInput) === 'javascript' ? runCode(newCodeInput) : alert('Only JavaScript can be tested!')} disabled={!newCodeInput.trim() || isRunning} className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50">{isRunning ? '⏳ Testing...' : '▶️ Test JavaScript'}</button>
+                                </div>
+                            </div>
+                            {compilerOutput && <div className="mt-6 border-t pt-4"><h4 className="font-medium mb-3">🔧 Compiler Output</h4><div className="bg-black text-green-400 p-4 rounded font-mono text-sm h-32 overflow-auto whitespace-pre-wrap">{compilerOutput}</div></div>}
+                        </div>
+                    )}
+
+                    {/* Code File Viewer */}
+                    {selectedCodeFile && (
+                        <div className="bg-white rounded-lg shadow-lg mb-6">
+                            <div className="p-4 border-b flex items-center justify-between"><div className="flex items-center gap-2"><h3 className="text-lg font-semibold">📄 {selectedCodeFile.name}</h3><span className="text-sm text-gray-500">({getLanguageName(selectedCodeFile.type)})</span></div><button onClick={() => setSelectedCodeFile(null)} className="text-gray-500 hover:text-red-500 text-xl">✕</button></div>
+                            <div className="p-4"><div className="bg-gray-900 text-gray-200 p-4 rounded font-mono text-sm overflow-auto max-h-96 mb-4"><pre className="whitespace-pre-wrap">{selectedCodeFile.content}</pre></div>
+                                {selectedCodeFile.type === 'javascript' && <button onClick={() => runCode(selectedCodeFile.content)} disabled={isRunning} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50">{isRunning ? '⏳ Running...' : '▶️ Run JavaScript'}</button>}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Phases */}
                     {phases.map(phase => (
                         <div key={phase.id} className="bg-white rounded-lg shadow-lg mb-6">
                             <div className="p-6 border-b cursor-pointer hover:bg-gray-50" onClick={() => togglePhaseExpansion(phase.id)}>
-                                {/* Phase Header */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3"><span className="text-xl">{phase.expanded ? '🔽' : '▶️'}</span><div><h2 className="text-xl font-semibold text-gray-800">{`Phase ${phase.id}: ${phase.name}`}</h2><p className="text-gray-600 text-sm">{phase.description}</p>{phase.codeFiles && phase.codeFiles.length > 0 && <div className="text-xs text-green-600 mt-1">{`📁 ${phase.codeFiles.length} code files`}</div>}</div></div>
+                                    <div className="text-right ml-4"><div className="text-lg font-bold text-blue-600">{getProgressPercentage(phase)}%</div><div className="text-sm text-gray-500">{`${phase.tasks.filter(t => t.completed).length}/${phase.tasks.length} tasks`}</div><div className="w-32 bg-gray-200 rounded-full h-2 mt-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: `${getProgressPercentage(phase)}%` }}></div></div></div>
+                                </div>
                             </div>
                             {phase.expanded && (
-                                <div className="p-6">
-                                    {/* Task List */}
+                                <div className="p-6 border-t">
+                                    {phase.codeFiles && phase.codeFiles.length > 0 && (<div className="mb-6"><h3 className="text-lg font-semibold mb-3">{`📁 Code Files`}</h3><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">{phase.codeFile.map((file, index) => (<button key={index} onClick={() => setSelectedCodeFile(file)} className="p-3 border rounded-lg hover:bg-blue-50 text-left"><div className="font-medium">📄 {file.name}</div><div className="text-sm text-gray-600">{`${file.content.split('\n').length} lines`} - <span className="font-medium">{getLanguageName(file.type)}</span></div></button>))}</div></div>)}
+                                    <h3 className="text-lg font-semibold mb-3">{`📋 Tasks`}</h3>
+                                    <div>{phase.tasks.map(task => (<div key={task.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded"><button onClick={() => toggleTaskCompletion(phase.id, task.id)} className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center mt-1 ${task.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'}`}>{task.completed && '✓'}</button><div className={`flex-1 ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>{task.text}<span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${task.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{task.priority}</span></div></div>))}</div>
                                 </div>
                             )}
                         </div>
                     ))}
-                    
+
                     {/* Footer */}
-                    <div className="text-center text-gray-500 text-sm mt-8">
-                        <p>🦝 Piza Sukeruton Universe • Cheese Wars Saga</p>
-                        <p>Built for the ultimate Trash Panda Trebuchet development journey</p>
-                    </div>
+                    <div className="text-center text-gray-500 text-sm mt-8 py-4"><p>🦝 Piza Sukeruton Universe • Cheese Wars Saga</p><p>Built for the ultimate Trash Panda Trebuchet development journey</p></div>
                 </div>
             );
         }
 
-        // Use the modern 'createRoot' API to render your app
         const container = document.getElementById('root');
         const root = ReactDOM.createRoot(container);
         root.render(<TrashPandaProjectManager />);
-
     </script>
 </body>
 </html>
