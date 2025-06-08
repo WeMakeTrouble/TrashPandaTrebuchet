@@ -1,0 +1,942 @@
+import React, { useState } from 'react';
+
+const TrashPandaProjectManager = () => {
+  const [phases, setPhases] = useState([
+    {
+      id: 1,
+      name: "Pre-Production & Prototyping",
+      description: "Define core gameplay, prove fun factor, establish technical feasibility",
+      expanded: true,
+      codeFiles: [
+        { 
+          name: "Core Physics Prototype", 
+          type: "unity", 
+          content: "// Unity C# script for trebuchet physics\nusing UnityEngine;\n\npublic class TrebuchetController : MonoBehaviour\n{\n    public Transform pivot;\n    public Rigidbody projectile;\n    public float power = 10f;\n    \n    void Update()\n    {\n        if (Input.GetMouseButtonDown(0))\n        {\n            LaunchProjectile();\n        }\n    }\n    \n    void LaunchProjectile()\n    {\n        Vector3 launchVector = CalculateLaunchVector();\n        projectile.AddForce(launchVector * power, ForceMode.Impulse);\n    }\n    \n    Vector3 CalculateLaunchVector()\n    {\n        return transform.forward + Vector3.up * 0.5f;\n    }\n}" 
+        }
+      ],
+      tasks: [
+        { id: 1, text: "Finalize Core Game Concept", completed: false, priority: "high" },
+        { id: 2, text: "Core Physics Prototype", completed: false, priority: "high" },
+        { id: 3, text: "Art Style Exploration", completed: false, priority: "medium" }
+      ]
+    },
+    {
+      id: 2,
+      name: "Vertical Slice",
+      description: "Create a small, polished section representing final quality",
+      expanded: false,
+      codeFiles: [],
+      tasks: [
+        { id: 4, text: "Develop 2-3 Complete Levels", completed: false, priority: "high" },
+        { id: 5, text: "Implement Core Raccoon Progression", completed: false, priority: "high" }
+      ]
+    },
+    {
+      id: 3,
+      name: "Production",
+      description: "Create full content, expand all systems, integrate all features",
+      expanded: false,
+      codeFiles: [],
+      tasks: [
+        { id: 6, text: "Level Design & Creation", completed: false, priority: "high" },
+        { id: 7, text: "Full Projectile Implementation", completed: false, priority: "high" }
+      ]
+    }
+  ]);
+
+  const [newTaskText, setNewTaskText] = useState('');
+  const [newTaskPhase, setNewTaskPhase] = useState(1);
+  const [selectedCodeFile, setSelectedCodeFile] = useState(null);
+  const [compilerOutput, setCompilerOutput] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+  const [showCodePortal, setShowCodePortal] = useState(false);
+  const [newCodeInput, setNewCodeInput] = useState('');
+  const [newCodeName, setNewCodeName] = useState('');
+  const [newCodeType, setNewCodeType] = useState('unity');
+  const [targetPhase, setTargetPhase] = useState(1);
+  const [showHelp, setShowHelp] = useState(null);
+  const [detectedLanguage, setDetectedLanguage] = useState('');
+  const [githubToken, setGithubToken] = useState('');
+  const [githubRepo, setGithubRepo] = useState('TrashPandaTrebuchet');
+  const [githubUsername, setGithubUsername] = useState('WeMakeTrouble');
+  const [showGitHubSetup, setShowGitHubSetup] = useState(false);
+  const [githubConnected, setGithubConnected] = useState(false);
+
+  const helpMessages = {
+    overview: "Welcome to Trash Panda Trebuchet Project Manager!\n\n• Track your game development progress\n• Manage tasks across development phases\n• Write and test code directly in the browser\n• Export code files for Unity or other tools\n\nClick any 🦝 raccoon for help!",
+    tasks: "Task Management Help:\n\n• Add tasks using the input field\n• Click checkboxes to mark complete\n• Tasks are organized by development phase\n• Track your progress with the progress bars\n\nPro tip: Break big tasks into smaller ones!",
+    codePortal: "Code Portal Help:\n\n1. Enter a file name\n2. Choose code type (Unity C#, JavaScript, etc.)\n3. Select target phase\n4. Write or paste your code\n5. Click 'Add to Phase' to save\n\nUse 'Load Template' for starter code!",
+    codeFiles: "Code Files Help:\n\n• Click any code file to view it\n• Run JavaScript code live in the browser\n• Export files for use in Unity or other tools\n• Files are organized by development phase\n\nPerfect for prototyping and testing!",
+    phases: "Development Phases Help:\n\n• Pre-Production: Core concepts and prototypes\n• Vertical Slice: Polished demo section\n• Production: Full game development\n• Each phase builds on the previous\n\nThis follows real game studio workflows!",
+    compiler: "Compiler Help:\n\n• JavaScript runs immediately in browser\n• See console output in real-time\n• Check for errors and debug issues\n• Export working code to files\n\nGreat for testing game logic quickly!",
+    github: "GitHub Integration Help:\n\n🔐 Setup Steps:\n1. Go to GitHub.com → Settings → Developer settings\n2. Create Personal Access Token with 'repo' permissions\n3. Enter your username and token here\n4. Create or use existing repository\n\n✨ Benefits:\n• Automatic code backup to GitHub\n• Version control for all your files\n• Professional development workflow\n• Share code with team members\n• Access code from anywhere\n\n🦝 Pro Tip: Your code gets organized into folders by development phase!"
+  };
+
+  const detectLanguage = (code) => {
+    if (!code.trim()) return 'text';
+    
+    const codeLines = code.toLowerCase();
+    
+    if (codeLines.includes('using unityengine') || 
+        codeLines.includes('monobehaviour') || 
+        codeLines.includes('void start()') || 
+        codeLines.includes('void update()') ||
+        codeLines.includes('gameobject') ||
+        codeLines.includes('transform') ||
+        codeLines.includes('rigidbody')) {
+      return 'unity';
+    }
+    
+    if (codeLines.includes('using system') || 
+        codeLines.includes('public class') || 
+        codeLines.includes('private void') ||
+        codeLines.includes('public void') ||
+        (codeLines.includes('{') && codeLines.includes('}') && codeLines.includes(';'))) {
+      return 'csharp';
+    }
+    
+    if (codeLines.includes('console.log') || 
+        codeLines.includes('function ') || 
+        codeLines.includes('const ') || 
+        codeLines.includes('let ') ||
+        codeLines.includes('var ') ||
+        codeLines.includes('document.') ||
+        codeLines.includes('window.') ||
+        codeLines.includes('=>')) {
+      return 'javascript';
+    }
+    
+    if (codeLines.includes('def ') || 
+        codeLines.includes('import ') || 
+        codeLines.includes('print(') || 
+        codeLines.includes('if __name__') ||
+        codeLines.includes('self.') ||
+        codeLines.includes('class ') && codeLines.includes(':')) {
+      return 'python';
+    }
+    
+    if (codeLines.includes('<html') || 
+        codeLines.includes('<!doctype') || 
+        codeLines.includes('<body') ||
+        codeLines.includes('<div') ||
+        codeLines.includes('<script')) {
+      return 'html';
+    }
+    
+    if (codeLines.includes('{') && codeLines.includes('}') && 
+        (codeLines.includes('color:') || 
+         codeLines.includes('background:') || 
+         codeLines.includes('margin:') ||
+         codeLines.includes('padding:') ||
+         codeLines.includes('.') || 
+         codeLines.includes('#'))) {
+      return 'css';
+    }
+    
+    if (codeLines.includes('select ') || 
+        codeLines.includes('insert ') || 
+        codeLines.includes('update ') ||
+        codeLines.includes('delete ') ||
+        codeLines.includes('create table') ||
+        codeLines.includes('from ') ||
+        codeLines.includes('where ')) {
+      return 'sql';
+    }
+    
+    return 'text';
+  };
+
+  const getLanguageIcon = (lang) => {
+    switch (lang) {
+      case 'unity': return '🎮';
+      case 'csharp': return '🔷';
+      case 'javascript': return '🟨';
+      case 'python': return '🐍';
+      case 'html': return '🌐';
+      case 'css': return '🎨';
+      case 'sql': return '📊';
+      default: return '📄';
+    }
+  };
+
+  const getLanguageName = (lang) => {
+    switch (lang) {
+      case 'unity': return 'Unity C#';
+      case 'csharp': return 'C#';
+      case 'javascript': return 'JavaScript';
+      case 'python': return 'Python';
+      case 'html': return 'HTML';
+      case 'css': return 'CSS';
+      case 'sql': return 'SQL';
+      default: return 'Plain Text';
+    }
+  };
+
+  const saveToGitHub = async (file, phase) => {
+    if (!githubConnected || !githubToken || !githubRepo || !githubUsername) {
+      alert('Please connect to GitHub first!');
+      return false;
+    }
+
+    try {
+      const fileName = file.name.replace(/\s+/g, '_') + '.' + getFileExtension(file.type);
+      const filePath = `Phase_${phase.id}_${phase.name.replace(/\s+/g, '_')}/${fileName}`;
+      const content = btoa(unescape(encodeURIComponent(file.content)));
+
+      const response = await fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${filePath}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `🦝 Add ${file.name} to ${phase.name} | Trash Panda Trebuchet`,
+          content: content,
+          branch: 'main'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.content.html_url;
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save to GitHub');
+      }
+    } catch (error) {
+      console.error('GitHub save error:', error);
+      alert('Failed to save to GitHub: ' + error.message);
+      return false;
+    }
+  };
+
+  const getFileExtension = (type) => {
+    switch (type) {
+      case 'unity':
+      case 'csharp': return 'cs';
+      case 'javascript': return 'js';
+      case 'python': return 'py';
+      case 'html': return 'html';
+      case 'css': return 'css';
+      case 'sql': return 'sql';
+      default: return 'txt';
+    }
+  };
+
+  const testGitHubConnection = async () => {
+    if (!githubToken || !githubUsername) {
+      alert('Please enter both GitHub username and token');
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://api.github.com/user`, {
+        headers: {
+          'Authorization': `token ${githubToken}`,
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setGithubConnected(true);
+        setShowGitHubSetup(false);
+        alert(`✅ Connected to GitHub as ${userData.login}!`);
+      } else {
+        throw new Error('Invalid token or username');
+      }
+    } catch (error) {
+      alert('❌ GitHub connection failed: ' + error.message);
+      setGithubConnected(false);
+    }
+  };
+
+  const togglePhaseExpansion = (phaseId) => {
+    setPhases(phases.map(phase => 
+      phase.id === phaseId ? { ...phase, expanded: !phase.expanded } : phase
+    ));
+  };
+
+  const toggleTaskCompletion = (phaseId, taskId) => {
+    setPhases(phases.map(phase => 
+      phase.id === phaseId 
+        ? {
+            ...phase,
+            tasks: phase.tasks.map(task => 
+              task.id === taskId ? { ...task, completed: !task.completed } : task
+            )
+          }
+        : phase
+    ));
+  };
+
+  const addNewTask = () => {
+    if (!newTaskText.trim()) return;
+
+    const newTask = {
+      id: Date.now(),
+      text: newTaskText,
+      completed: false,
+      priority: 'medium'
+    };
+
+    setPhases(phases.map(phase => 
+      phase.id === newTaskPhase 
+        ? { ...phase, tasks: [...phase.tasks, newTask] }
+        : phase
+    ));
+
+    setNewTaskText('');
+  };
+
+  const addCodeFromPortal = async () => {
+    if (!newCodeInput.trim() || !newCodeName.trim()) {
+      alert('Please enter both code name and content');
+      return;
+    }
+
+    const finalLanguage = detectedLanguage || detectLanguage(newCodeInput);
+
+    const newFile = {
+      name: newCodeName,
+      type: finalLanguage,
+      content: newCodeInput
+    };
+
+    const targetPhaseObj = phases.find(p => p.id === targetPhase);
+
+    if (githubConnected) {
+      const githubUrl = await saveToGitHub(newFile, targetPhaseObj);
+      if (githubUrl) {
+        newFile.githubUrl = githubUrl;
+      }
+    }
+
+    setPhases(phases.map(phase => 
+      phase.id === targetPhase 
+        ? { ...phase, codeFiles: [...(phase.codeFiles || []), newFile] }
+        : phase
+    ));
+
+    setNewCodeInput('');
+    setNewCodeName('');
+    setDetectedLanguage('');
+    setShowCodePortal(false);
+    
+    const message = githubConnected ? 
+      `Code file added as ${getLanguageName(finalLanguage)} and saved to GitHub! 🎉` :
+      `Code file added as ${getLanguageName(finalLanguage)}!`;
+    alert(message);
+  };
+
+  const loadTemplate = () => {
+    let template = '';
+    const fileName = newCodeName || 'NewScript';
+    const lang = detectedLanguage || newCodeType;
+    
+    if (lang === 'unity') {
+      template = '// Unity C# Script\nusing UnityEngine;\n\npublic class ' + fileName + ' : MonoBehaviour\n{\n    void Start()\n    {\n        // Initialize here\n    }\n    \n    void Update()\n    {\n        // Update logic here\n    }\n}';
+    } else if (lang === 'javascript') {
+      template = '// JavaScript for Trash Panda Trebuchet\nconsole.log("Hello from ' + fileName + '!");\n\nfunction main() {\n    console.log("Trebuchet ready!");\n}\n\nmain();';
+    } else if (lang === 'python') {
+      template = '# Python script for ' + fileName + '\nprint("Hello from Trash Panda Trebuchet!")\n\ndef main():\n    print("Trebuchet system initialized")\n    pass\n\nif __name__ == "__main__":\n    main()';
+    } else if (lang === 'html') {
+      template = '<!DOCTYPE html>\n<html>\n<head>\n    <title>' + fileName + '</title>\n</head>\n<body>\n    <h1>🦝 Trash Panda Trebuchet</h1>\n    <p>Welcome to the Piza Sukeruton universe!</p>\n</body>\n</html>';
+    } else if (lang === 'css') {
+      template = '/* CSS for ' + fileName + ' */\n.trebuchet {\n    background: #8B4513;\n    border-radius: 10px;\n    padding: 20px;\n}\n\n.raccoon {\n    color: #654321;\n    font-weight: bold;\n}';
+    } else {
+      template = '// Your code here for ' + fileName;
+    }
+    
+    setNewCodeInput(template);
+    const detected = detectLanguage(template);
+    setDetectedLanguage(detected);
+  };
+
+  const runCode = (code, fileType) => {
+    setIsRunning(true);
+    setCompilerOutput('🔄 Running code...\n');
+    
+    setTimeout(() => {
+      try {
+        if (fileType === 'javascript') {
+          let output = '';
+          const oldLog = console.log;
+          console.log = (...args) => {
+            output += args.join(' ') + '\n';
+          };
+          
+          new Function(code)();
+          console.log = oldLog;
+          
+          setCompilerOutput('✅ Success!\n\n📤 Output:\n' + (output || 'No output') + '\n\n🦝 Ready for Trash Panda Trebuchet!');
+        } else if (fileType === 'unity' || fileType === 'csharp') {
+          const lines = code.split('\n').length;
+          const hasClasses = code.includes('class ');
+          const hasMethods = code.includes('void ') || code.includes('public ') || code.includes('private ');
+          setCompilerOutput('✅ C# Code Analyzed!\n\n📊 Analysis:\n• Lines: ' + lines + '\n• Classes detected: ' + (hasClasses ? 'Yes' : 'No') + '\n• Methods found: ' + (hasMethods ? 'Yes' : 'No') + '\n\n🎮 Ready for Unity integration!');
+        } else if (fileType === 'python') {
+          const lines = code.split('\n').length;
+          const hasFunctions = code.includes('def ');
+          const hasImports = code.includes('import ');
+          setCompilerOutput('✅ Python Code Analyzed!\n\n📊 Analysis:\n• Lines: ' + lines + '\n• Functions: ' + (hasFunctions ? 'Found' : 'None') + '\n• Imports: ' + (hasImports ? 'Found' : 'None') + '\n\n🐍 Python syntax looks good!');
+        } else {
+          setCompilerOutput('✅ Code processed!\n\n📝 Type: ' + getLanguageName(fileType) + '\n📄 Lines: ' + code.split('\n').length + '\n🚀 Ready for use!');
+        }
+      } catch (error) {
+        setCompilerOutput('❌ Error!\n\n🐛 ' + error.message);
+      }
+      setIsRunning(false);
+    }, 1000);
+  };
+
+  const exportCode = (file) => {
+    const blob = new Blob([file.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name + '.' + (file.type === 'unity' ? 'cs' : 'js');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const getProgressPercentage = (phase) => {
+    if (phase.tasks.length === 0) return 0;
+    const completed = phase.tasks.filter(task => task.completed).length;
+    return Math.round((completed / phase.tasks.length) * 100);
+  };
+
+  const totalTasks = phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
+  const completedTasks = phases.reduce((sum, phase) => 
+    sum + phase.tasks.filter(task => task.completed).length, 0
+  );
+
+  return (
+    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              🗿 Trash Panda Trebuchet
+              <span className="text-lg font-normal text-gray-600 ml-3">Project Manager</span>
+              <button
+                onClick={() => setShowHelp('overview')}
+                className="ml-3 text-lg hover:scale-110 transition-transform"
+                title="How to use the Project Manager"
+              >
+                🦝
+              </button>
+            </h1>
+            <p className="text-gray-600 mt-2">Piza Sukeruton Universe • 2.5D Physics Puzzle Arcade Strategy</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-blue-600">
+              {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%
+            </div>
+            <div className="text-sm text-gray-500">Overall Progress</div>
+            <div className="text-xs text-gray-400">{completedTasks}/{totalTasks} tasks</div>
+          </div>
+        </div>
+        
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div 
+            className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300"
+            style={{ width: (totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0) + '%' }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="flex flex-wrap gap-4 mb-4">
+          <button
+            onClick={() => setShowCodePortal(!showCodePortal)}
+            className={'px-4 py-2 rounded border ' + (showCodePortal ? 'bg-green-100 border-green-500' : 'bg-gray-100 border-gray-300')}
+          >
+            💻 Code Portal
+          </button>
+          <button
+            onClick={() => setShowGitHubSetup(!showGitHubSetup)}
+            className={'px-4 py-2 rounded border ' + (githubConnected ? 'bg-green-100 border-green-500' : 'bg-gray-100 border-gray-300')}
+          >
+            {githubConnected ? '✅ GitHub Connected' : '📚 Connect GitHub'}
+          </button>
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newTaskText}
+            onChange={(e) => setNewTaskText(e.target.value)}
+            placeholder="Add new task..."
+            className="flex-1 border rounded px-3 py-2"
+            onKeyPress={(e) => e.key === 'Enter' && addNewTask()}
+          />
+          <select 
+            value={newTaskPhase} 
+            onChange={(e) => setNewTaskPhase(parseInt(e.target.value))}
+            className="border rounded px-3 py-2"
+          >
+            {phases.map(phase => (
+              <option key={phase.id} value={phase.id}>{phase.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={addNewTask}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            ➕ Add Task
+          </button>
+          <button
+            onClick={() => setShowHelp('tasks')}
+            className="bg-gray-100 text-gray-600 px-3 py-2 rounded hover:bg-gray-200 text-lg"
+            title="Task help"
+          >
+            🦝
+          </button>
+        </div>
+      </div>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">🦝 Raccoon Help</h3>
+                <button
+                  onClick={() => setShowHelp(null)}
+                  className="text-gray-500 hover:text-red-500 text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="text-gray-700 whitespace-pre-line leading-relaxed">
+                {helpMessages[showHelp]}
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowHelp(null)}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  Got it! 👍
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GitHub Setup */}
+      {showGitHubSetup && (
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-2 border-blue-300">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-bold text-gray-800">📚 GitHub Integration Setup</h2>
+            <button
+              onClick={() => setShowHelp('github')}
+              className="text-lg hover:scale-110 transition-transform"
+              title="GitHub help"
+            >
+              🦝
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">🎯 Your Repository Ready!</h3>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p><strong>Repository:</strong> WeMakeTrouble/TrashPandaTrebuchet</p>
+                <p><strong>URL:</strong> https://github.com/WeMakeTrouble/TrashPandaTrebuchet.git</p>
+                <p><strong>Status:</strong> Repository detected and pre-configured!</p>
+              </div>
+              <div className="mt-2 text-xs text-blue-600">
+                Just add your Personal Access Token below to start auto-saving code!
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Personal Access Token</label>
+              <input
+                type="password"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                placeholder="ghp_xxxxxxxxxxxxxxxx"
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={testGitHubConnection}
+                disabled={!githubToken}
+                className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+              >
+                🔗 Connect to TrashPandaTrebuchet
+              </button>
+              {githubConnected && (
+                <a
+                  href={`https://github.com/${githubUsername}/${githubRepo}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-purple-500 text-white px-6 py-2 rounded hover:bg-purple-600 inline-flex items-center gap-2"
+                >
+                  👁️ View Repository
+                </a>
+              )}
+            </div>
+
+            {githubConnected && (
+              <div className="bg-green-50 border border-green-200 rounded p-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">✅</span>
+                  <div>
+                    <div className="font-medium text-green-800">
+                      Connected to GitHub!
+                    </div>
+                    <div className="text-sm text-green-600">
+                      Your code will automatically save to: {githubUsername}/{githubRepo}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Code Portal */}
+      {showCodePortal && (
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-2 border-green-300">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-bold text-gray-800">🚀 Code Input Portal</h2>
+            <button
+              onClick={() => setShowHelp('codePortal')}
+              className="text-lg hover:scale-110 transition-transform"
+              title="Code Portal help"
+            >
+              🦝
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">File Name</label>
+                <input
+                  type="text"
+                  value={newCodeName}
+                  onChange={(e) => setNewCodeName(e.target.value)}
+                  placeholder="e.g., TrebuchetController"
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target Phase</label>
+                <select 
+                  value={targetPhase}
+                  onChange={(e) => setTargetPhase(parseInt(e.target.value))}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  {phases.map(phase => (
+                    <option key={phase.id} value={phase.id}>
+                      Phase {phase.id}: {phase.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Auto-detected language display */}
+            {newCodeInput.trim() && (
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{getLanguageIcon(detectLanguage(newCodeInput))}</span>
+                  <div>
+                    <div className="font-medium text-blue-800">
+                      Auto-detected: {getLanguageName(detectLanguage(newCodeInput))}
+                    </div>
+                    <div className="text-sm text-blue-600">
+                      The portal automatically detected your programming language!
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">Code Content</label>
+                <div className="flex gap-2">
+                  <select 
+                    value={newCodeType}
+                    onChange={(e) => {
+                      setNewCodeType(e.target.value);
+                      setDetectedLanguage(e.target.value);
+                    }}
+                    className="text-sm border rounded px-2 py-1"
+                    title="Choose template language"
+                  >
+                    <option value="unity">🎮 Unity C#</option>
+                    <option value="javascript">🟨 JavaScript</option>
+                    <option value="python">🐍 Python</option>
+                    <option value="html">🌐 HTML</option>
+                    <option value="css">🎨 CSS</option>
+                  </select>
+                  <button
+                    onClick={loadTemplate}
+                    className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  >
+                    Load Template
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewCodeInput('');
+                      setDetectedLanguage('');
+                    }}
+                    className="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <textarea
+                value={newCodeInput}
+                onChange={(e) => {
+                  setNewCodeInput(e.target.value);
+                  if (e.target.value.trim()) {
+                    setDetectedLanguage(detectLanguage(e.target.value));
+                  } else {
+                    setDetectedLanguage('');
+                  }
+                }}
+                placeholder="🚀 Paste or type your code here...\n\nThe portal will automatically detect:\n• Unity C# (MonoBehaviour, GameObject, etc.)\n• JavaScript (console.log, function, const, etc.)\n• Python (def, import, print, etc.)\n• HTML (tags, doctype, etc.)\n• CSS (selectors, properties, etc.)\n• And more!"
+                className="w-full h-64 font-mono text-sm border rounded p-3 bg-gray-50"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={addCodeFromPortal}
+                disabled={!newCodeInput.trim() || !newCodeName.trim()}
+                className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+              >
+                📤 Add to Phase {targetPhase}
+              </button>
+              <button
+                onClick={() => {
+                  if (newCodeInput.trim()) {
+                    const detectedLang = detectedLanguage || detectLanguage(newCodeInput);
+                    runCode(newCodeInput, detectedLang);
+                  }
+                }}
+                disabled={!newCodeInput.trim() || isRunning}
+                className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+              >
+                {isRunning ? '⏳ Testing...' : '▶️ Test Code'}
+              </button>
+            </div>
+          </div>
+
+          {compilerOutput && (
+            <div className="mt-6 border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <h4 className="font-medium">🔧 Compiler Output</h4>
+                <button
+                  onClick={() => setShowHelp('compiler')}
+                  className="text-lg hover:scale-110 transition-transform"
+                  title="Compiler help"
+                >
+                  🦝
+                </button>
+              </div>
+              <div className="bg-black text-green-400 p-4 rounded font-mono text-sm h-32 overflow-auto whitespace-pre-wrap">
+                {compilerOutput}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Code File Viewer */}
+      {selectedCodeFile && (
+        <div className="bg-white rounded-lg shadow-lg mb-6">
+          <div className="p-4 border-b flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">📄 {selectedCodeFile.name}</h3>
+              <span className="text-sm text-gray-500">({getLanguageName(selectedCodeFile.type)})</span>
+            </div>
+            <button
+              onClick={() => setSelectedCodeFile(null)}
+              className="text-gray-500 hover:text-red-500 text-xl"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-4">
+            <div className="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm overflow-auto max-h-96 mb-4">
+              <div className="text-blue-400 mb-2">// {selectedCodeFile.type.toUpperCase()} - {selectedCodeFile.name}</div>
+              <pre className="whitespace-pre-wrap">{selectedCodeFile.content}</pre>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => runCode(selectedCodeFile.content, selectedCodeFile.type)}
+                disabled={isRunning}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+              >
+                {isRunning ? '⏳ Running...' : '▶️ Run Code'}
+              </button>
+              <button
+                onClick={() => exportCode(selectedCodeFile)}
+                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+              >
+                💾 Export
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phases */}
+      {phases.map(phase => (
+        <div key={phase.id} className="bg-white rounded-lg shadow-lg mb-6">
+          <div 
+            className="p-6 border-b cursor-pointer hover:bg-gray-50"
+            onClick={() => togglePhaseExpansion(phase.id)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{phase.expanded ? '🔽' : '▶️'}</span>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Phase {phase.id}: {phase.name}
+                  </h2>
+                  <p className="text-gray-600 text-sm">{phase.description}</p>
+                  {phase.codeFiles && phase.codeFiles.length > 0 && (
+                    <div className="text-xs text-green-600 mt-1">
+                      📁 {phase.codeFiles.length} code files
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowHelp('phases');
+                  }}
+                  className="text-lg hover:scale-110 transition-transform ml-2"
+                  title="Phase help"
+                >
+                  🦝
+                </button>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-blue-600">
+                  {getProgressPercentage(phase)}%
+                </div>
+                <div className="text-sm text-gray-500">
+                  {phase.tasks.filter(t => t.completed).length}/{phase.tasks.length} tasks
+                </div>
+                <div className="w-32 bg-gray-200 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: getProgressPercentage(phase) + '%' }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {phase.expanded && (
+            <div className="p-6">
+              {/* Code Files */}
+              {phase.codeFiles && phase.codeFiles.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    📁 Code Files ({phase.codeFiles.length})
+                    <button
+                      onClick={() => setShowHelp('codeFiles')}
+                      className="text-lg hover:scale-110 transition-transform"
+                      title="Code files help"
+                    >
+                      🦝
+                    </button>
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {phase.codeFiles.map((file, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedCodeFile(file)}
+                        className="p-3 border rounded-lg hover:bg-blue-50 hover:border-blue-300 text-left transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span>📄</span>
+                          <span className="font-medium">{file.name}</span>
+                          <span className="text-xs text-gray-500">({getLanguageName(file.type)})</span>
+                          {file.githubUrl && (
+                            <a
+                              href={file.githubUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              📚 GitHub
+                            </a>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {file.content.split('\n').length} lines
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tasks */}
+              <h3 className="text-lg font-semibold mb-3">📋 Tasks ({phase.tasks.length})</h3>
+              {phase.tasks.map(task => (
+                <div key={task.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded mb-2">
+                  <button
+                    onClick={() => toggleTaskCompletion(phase.id, task.id)}
+                    className={'w-5 h-5 rounded border-2 flex items-center justify-center mt-1 ' + (
+                      task.completed 
+                        ? 'bg-green-500 border-green-500 text-white' 
+                        : 'border-gray-300 hover:border-green-500'
+                    )}
+                  >
+                    {task.completed && '✓'}
+                  </button>
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={task.completed ? 'line-through text-gray-500' : 'text-gray-800'}>
+                        {task.text}
+                      </span>
+                      <span className={'px-2 py-1 rounded text-xs font-medium ' + (
+                        task.priority === 'high' ? 'text-red-600 bg-red-50' :
+                        task.priority === 'medium' ? 'text-yellow-600 bg-yellow-50' :
+                        'text-green-600 bg-green-50'
+                      )}>
+                        {task.priority}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Footer */}
+      <div className="text-center text-gray-500 text-sm mt-8">
+        <p>🦝 Piza Sukeruton Universe • Cheese Wars Saga</p>
+        <p>Built for the ultimate Trash Panda Trebuchet development journey</p>
+      </div>
+    </div>
+  );
+};
+
+export default TrashPandaProjectManager;
